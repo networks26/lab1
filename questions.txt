@@ -1,0 +1,724 @@
+# Ethernet lab
+
+We have learned about Ethernet.
+
+Now let's look at Ethernet on a real Unix server.
+
+## Network interfaces
+
+Run:
+
+```sh
+ifconfig eth0
+```
+
+But wait — there is no program `ifconfig`.
+
+Why?
+
+It actually exists, but the directory containing it is not in your `PATH`.
+
+I can tell you that `ifconfig` is in:
+
+```text
+/sbin
+```
+
+You *could* run:
+
+```sh
+/sbin/ifconfig eth0
+```
+
+but don't do that every time.
+
+Instead, add `/sbin` to your `PATH` environment variable.
+
+What do you have to type?
+
+Look for hints in:
+
+```sh
+/etc/studrc
+```
+
+After fixing your `PATH`, this should work:
+
+```sh
+ifconfig eth0
+```
+
+Look carefully at the output.
+
+Find the line containing something like:
+
+```text
+ether 18:c3:00:58:8d:47
+```
+
+What is this address?
+
+---
+
+What is the Ethernet address, also called the MAC address, of `eth0`?
+
+---
+
+# Connecting programs together
+
+Unix commands normally have:
+
+* **standard input** — where they read data from;
+* **standard output** — where they write normal results;
+* **standard error** — where they write errors.
+
+Usually the standard output is your terminal.
+
+For example:
+
+```sh
+ifconfig eth0
+```
+
+prints its output on the terminal.
+
+But Unix lets us take the output of one program and give it directly to another program.
+
+For this we use the **pipe** character:
+
+```text
+|
+```
+
+For example:
+
+```sh
+ifconfig eth0 | grep ether
+```
+
+The `|` means:
+
+> take the standard output of the command on the left and use it as the standard input of the command on the right.
+
+So here:
+
+```text
+ifconfig eth0
+        |
+        v
+   grep ether
+```
+
+`ifconfig` produces many lines.
+
+`grep ether` receives those lines and prints only lines containing the word `ether`.
+
+Try:
+
+```sh
+ifconfig eth0
+```
+
+and then:
+
+```sh
+ifconfig eth0 | grep ether
+```
+
+Compare the outputs.
+
+What did `grep` remove?
+
+---
+
+Read about `grep`:
+
+```sh
+man grep
+```
+
+You can experiment with it.
+
+For example:
+
+```sh
+ifconfig eth0 | grep inet
+```
+
+or:
+
+```sh
+ifconfig eth0 | grep ether
+```
+
+# Redirecting output to a file
+
+A pipe:
+
+```text
+|
+```
+
+sends output to **another program**.
+
+A greater-than sign:
+
+```text
+>
+```
+
+sends output to a **file**.
+
+For example:
+
+```sh
+ifconfig eth0 > interface.txt
+```
+
+does not print the normal output of `ifconfig` on your terminal.
+
+Instead, it writes that output into:
+
+```text
+interface.txt
+```
+
+Check:
+
+```sh
+ls
+```
+
+Then:
+
+```sh
+cat interface.txt
+```
+
+Now combine a pipe and redirection:
+
+```sh
+ifconfig eth0 | grep ether > line.txt
+```
+
+What happens here?
+
+First:
+
+```sh
+ifconfig eth0
+```
+
+produces information about the interface.
+
+Then:
+
+```text
+|
+```
+
+sends that information to:
+
+```sh
+grep ether
+```
+
+`grep` keeps only the line containing `ether`.
+
+Finally:
+
+```text
+>
+```
+
+writes that line into:
+
+```text
+line.txt
+```
+
+Check it:
+
+```sh
+cat line.txt
+```
+
+So remember:
+
+```text
+command1 | command2
+```
+
+means:
+
+> send output from command1 into command2
+
+while:
+
+```text
+command > file
+```
+
+means:
+
+> write the output of command into a file
+
+# Extract only the Ethernet address
+
+Our file currently contains a whole line.
+
+We want a file containing **only** the Ethernet address.
+
+There is another useful Unix command:
+
+```sh
+cut
+```
+
+Read:
+
+```sh
+man cut
+```
+
+Try to understand what the options `-d` and `-f` mean.
+
+You can connect more than two commands with pipes:
+
+```text
+program1 | program2 | program3
+```
+
+The output flows from left to right:
+
+```text
+program1
+   |
+   v
+program2
+   |
+   v
+program3
+```
+
+For example, we can:
+
+1. ask `ifconfig` for interface information;
+2. use `grep` to keep only the Ethernet line;
+3. use `cut` to keep only one field.
+
+Experiment with commands such as:
+
+```sh
+ifconfig eth0 | grep ether
+```
+
+and then try adding `cut`.
+
+Your goal is to produce output like:
+
+```text
+18:c3:00:58:8d:47
+```
+
+and nothing else.
+
+When you have found the correct command, redirect its output to:
+
+```text
+ether.txt
+```
+
+For example, the structure of your command will look like:
+
+```sh
+ifconfig eth0 | grep SOMETHING | cut SOMETHING > ether.txt
+```
+
+You need to figure out the missing parts.
+
+Check your result:
+
+```sh
+cat ether.txt
+```
+
+The file should contain only one Ethernet address.
+
+Add it to Git:
+
+```sh
+git add ether.txt
+```
+
+# Other network interfaces
+
+So far we asked `ifconfig` to show only `eth0`.
+
+Read:
+
+```sh
+man ifconfig
+```
+
+and figure out how to ask it to show **all network interfaces**.
+
+What other network interface or interfaces does your server have?
+
+---
+
+---
+
+Do all interfaces have an Ethernet address?
+
+---
+
+If not, why do you think that might be?
+
+---
+
+# What Ethernet neighbors does the server know about?
+
+A computer sometimes needs to send an Ethernet frame to another computer on the same local network.
+
+To send an Ethernet frame, it needs to know the destination Ethernet address.
+
+Unix keeps information about other machines it has recently communicated with.
+
+There is an old command for looking at this information:
+
+```sh
+arp
+```
+
+Try it:
+
+```sh
+arp
+```
+
+It is probably not found.
+
+The program exists, but once again its directory is not in your `PATH`.
+
+I can tell you that it is in:
+
+```text
+/usr/sbin
+```
+
+Add `/usr/sbin` to your `PATH`.
+
+Then run:
+
+```sh
+arp
+```
+
+Now run:
+
+```sh
+arp -n
+```
+
+Compare the outputs.
+
+What changed?
+
+---
+
+Look at the column containing addresses such as:
+
+```text
+18:c3:00:58:8d:47
+```
+
+What kind of addresses are these?
+
+---
+
+Write down the Ethernet addresses you see:
+
+---
+
+---
+
+---
+
+The table you are looking at is called the **ARP table**, or **ARP cache**.
+
+It does **not** necessarily contain every computer connected to the network.
+
+It contains neighboring machines that this server currently knows about.
+
+# Save the ARP table
+
+Redirect the output of:
+
+```sh
+arp -n
+```
+
+into a file called:
+
+```text
+arp.txt
+```
+
+You already know how to redirect output.
+
+Do it yourself.
+
+Then verify:
+
+```sh
+cat arp.txt
+```
+
+Add it to Git:
+
+```sh
+git add arp.txt
+```
+
+# The modern Linux command
+
+Linux also has a newer command for looking at neighboring machines.
+
+Run:
+
+```sh
+ip neigh
+```
+
+Compare it with:
+
+```sh
+arp -n
+```
+
+Do you see some of the same Ethernet addresses?
+
+---
+
+Pick one Ethernet address that appears in both outputs and write it here:
+
+---
+
+Create a file called:
+
+```text
+neighbors.txt
+```
+
+containing the output of:
+
+```sh
+ip neigh
+```
+
+Do this using output redirection.
+
+Add it to Git.
+
+# Another network table
+
+Run:
+
+```sh
+route -n
+```
+
+You do **not** need to understand all the numbers in this table yet.
+
+We will learn about IP addresses and routing later.
+
+For now, just look at the table.
+
+Find the row whose first column is:
+
+```text
+0.0.0.0
+```
+
+There should be another address on that row in the `Gateway` column.
+
+Copy that address here:
+
+---
+
+For now, think of that number simply as the address of a machine that this server often needs to communicate with.
+
+We will learn what that address means later.
+
+# Make the server communicate with that machine
+
+Use the address you found as the argument to `ping`:
+
+```sh
+ping ADDRESS
+```
+
+Replace `ADDRESS` with the address you found.
+
+`ping` will continue running.
+
+To stop it, press:
+
+```text
+Ctrl-C
+```
+
+You may sometimes see this written as:
+
+```text
+^C
+```
+
+where `^` means the Ctrl key.
+
+This sends the program a signal called `SIGINT`.
+
+
+# Extract an Ethernet address from the ARP table
+
+Now let's practice pipes again.
+
+Run:
+
+```sh
+arp -n
+```
+
+Suppose you want to find only one particular line.
+
+You can send the output to `grep`:
+
+```sh
+arp -n | grep SOMETHING
+```
+
+Replace `SOMETHING` with part of the line you want to find.
+
+Remember:
+
+```text
+arp -n
+   |
+   v
+ grep
+```
+
+The `arp` command does not know anything about `grep`.
+
+It simply writes its output.
+
+The shell connects that output to the input of `grep`.
+
+Now use another pipe and `cut`, or another command you discover, to extract **only the Ethernet address** from that line.
+
+Create:
+
+```text
+router-ether.txt
+```
+
+containing only an address similar to:
+
+```text
+18:c3:00:58:8d:47
+```
+
+Check it:
+
+```sh
+cat router-ether.txt
+```
+
+Add it to Git:
+
+```sh
+git add router-ether.txt
+```
+
+# Think about what happened
+
+Your computer wants to send an Ethernet frame to another machine.
+
+Which address must be written in the Ethernet frame?
+
+---
+
+Which command showed you Ethernet addresses known by the server?
+
+---
+
+Which two commands gave you similar information?
+
+---
+
+What does this symbol do?
+
+```text
+|
+```
+
+---
+
+What does this symbol do?
+
+```text
+>
+```
+
+---
+
+Explain in your own words what happens here:
+
+```sh
+arp -n | grep SOMETHING > result.txt
+```
+
+---
+
+---
+
+---
+
+And what happens here?
+
+```sh
+ifconfig eth0 | grep ether | cut ... > ether.txt
+```
+
+---
+
+---
+
+---
+
+# Git
+
+Run:
+
+```sh
+git status
+```
+
+Make sure Git is tracking the files required by the exercise, including:
+
+```text
+ether.txt
+arp.txt
+neighbors.txt
+router-ether.txt
+```
+
+Commit your changes.
+
+Push your changes.
+
+Refresh your repository in the browser and make sure that the files really appeared on the server.
+
+Have a nice day!
+
